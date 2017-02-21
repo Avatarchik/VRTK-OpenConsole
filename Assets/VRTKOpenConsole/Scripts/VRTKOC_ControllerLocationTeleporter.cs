@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using VRTK;
 
 [RequireComponent(typeof(VRTK.VRTK_ControllerEvents))]
@@ -10,16 +11,20 @@ public class VRTKOC_ControllerLocationTeleporter : MonoBehaviour {
     //[SerializeField]
     //VRTK_PolicyList TeleportLocations;
     public string Tag = "TeleportLocation";
-    List<Cubemap> m_cubeMaps = new List<Cubemap>();
-    bool active;
-    GameObject LocationHolder;
-
+    static List<Cubemap> m_cubeMaps = new List<Cubemap>();
+    static bool active;
+    static GameObject LocationHolder;
+    static bool _generated = false;
 	// Use this for initialization
 	void Start () {
-        GetComponent<VRTK_ControllerEvents>().ButtonOnePressed += new ControllerInteractionEventHandler(ButtonOnePressed);
-        GetComponent<VRTK_ControllerEvents>().ButtonOneReleased += new ControllerInteractionEventHandler(ButtonOneReleased);
-        GenerateTeleportPreviews();
-        LocationHolder.SetActive(false);
+        if (!_generated)
+        {
+            GetComponent<VRTK_ControllerEvents>().ButtonOnePressed += new ControllerInteractionEventHandler(ButtonOnePressed);
+            GetComponent<VRTK_ControllerEvents>().ButtonOneReleased += new ControllerInteractionEventHandler(ButtonOneReleased);
+            GenerateTeleportPreviews();
+            LocationHolder.SetActive(false);
+            _generated = true;
+        }
     }
 
     private void GenerateTeleportPreviews()
@@ -36,7 +41,10 @@ public class VRTKOC_ControllerLocationTeleporter : MonoBehaviour {
         LocationHolder = new GameObject("LocationHolder");
         LocationHolder.transform.position = Vector3.zero;
 
-        for(int i=0; i<locations.Length;i++)
+        GameObject particlesPrefab = Resources.Load("VRTKOC_TeleportParticles", typeof(GameObject)) as GameObject;
+        GameObject textPrefab = Resources.Load("VRTKOC_TeleportText", typeof(GameObject)) as GameObject;
+
+        for (int i=0; i<locations.Length;i++)
         {
             //GenerateSphere
             GameObject locationSphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -54,6 +62,12 @@ public class VRTKOC_ControllerLocationTeleporter : MonoBehaviour {
             tempCam.GetComponent<Camera>().RenderToCubemap(cubeMap);
             mat.SetTexture("_node_3243", cubeMap);
             m_cubeMaps.Add(cubeMap);
+            if(particlesPrefab!=null)
+                GameObject.Instantiate(particlesPrefab, locationSphere.transform,false);
+            if (textPrefab != null)
+            {
+                GameObject.Instantiate(textPrefab, locationSphere.transform, false).GetComponentInChildren<Text>().text = locations[i].name;
+            }
 
         }
         // destroy temporary camera
